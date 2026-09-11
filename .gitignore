@@ -1,0 +1,7 @@
+agents_venv/
+__pycache__/
+*.pyc
+.env
+corpus/*.pdf
+*.faiss
+.DS_Store
