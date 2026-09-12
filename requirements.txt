@@ -1,2 +1,5 @@
 pymupdf
 langchain-text-splitters
+langchain-experimental
+sentence-transformers
+langchain-huggingface
