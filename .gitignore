@@ -4,4 +4,5 @@ __pycache__/
 .env
 corpus/*.pdf
 *.faiss
-.DS_Store
+.DS_Storefaiss_index.bin
+chunk_data.pkl
