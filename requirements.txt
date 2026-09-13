@@ -5,3 +5,4 @@ sentence-transformers
 langchain-huggingface
 faiss-cpulangchain
 langchain-community
+openai
