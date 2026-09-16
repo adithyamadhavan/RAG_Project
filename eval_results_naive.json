@@ -1,0 +1,160 @@
+[
+  {
+    "query": "What is quality diversity optimization in the context of NAS?",
+    "answer": "Quality diversity optimization in the context of NAS refers to the process of generating multiple candidate architectures that are diverse in terms of their quality. This approach aims to improve the diversity of the search space, which can lead to better solutions by providing a wider range of options. In NAS, this is achieved by using methods that generate multiple candidate architectures, which are then evaluated to find the best solution. The goal is to create a diverse set of candidate architectures that can be used to improve the overall performance of the system. This approach is distinct from traditional NAS methods, which often focus on optimizing a single architecture, resulting in a less diverse search space.",
+    "retrieved_sources": [
+      "CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf",
+      "DiffusionNAG_ Predictor_Guided neural architecture with diffusion models.pdf",
+      "NAS_PEFT.pdf",
+      "Neural Architecture Generator.pdf"
+    ]
+  },
+  {
+    "query": "What are the three main components of the CoLLM-NAS framework?",
+    "answer": "The three main components of the CoLLM-NAS framework are:\n\n1. **Navigator LLM**: The stateful Navigator LLM functions as a strategic guide with persistent memory. It dynamically formulates and redefines search strategies through iterative analysis of performance patterns emerging from evaluated architectures.\n\n2. **Generator LLM**: The Generator LLM is responsible for generating new candidate architectures. It leverages the insights from the Navigator LLM to propose novel designs.\n\n3. **Coordinator Module**: The Coordinator module oversees the collaboration process, coordinating the interactions between the Navigator LLM, Generator LLM, and the rest of the system. It ensures that the search space is efficiently explored while maintaining the diversity of the candidate architectures.",
+    "retrieved_sources": [
+      "CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf"
+    ]
+  },
+  {
+    "query": "What search space does RegNet use for its architecture?",
+    "answer": "The RegNet search space used by RegNet is not explicitly mentioned in the provided context. Therefore, the answer is: [No specific search space for RegNet mentioned in the context].",
+    "retrieved_sources": [
+      "CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf",
+      "DiffusionNAG_ Predictor_Guided neural architecture with diffusion models.pdf",
+      "Neural Architecture Generator.pdf",
+      "RZ_NAS.pdf"
+    ]
+  },
+  {
+    "query": "How much does CoLLM-NAS reduce search costs compared to existing methods?",
+    "answer": "CoLLM-NAS reduces search costs by 4\u201310\u00d7 compared to existing methods. [Source: CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf]",
+    "retrieved_sources": [
+      "CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf"
+    ]
+  },
+  {
+    "query": "What datasets were used to evaluate RZ-NAS?",
+    "answer": "The datasets used to evaluate RZ-NAS are CIFAR-10 and CIFAR-100.",
+    "retrieved_sources": [
+      "RZ_NAS.pdf"
+    ]
+  },
+  {
+    "query": "What is the Reflective Zero-Cost strategy in RZ-NAS?",
+    "answer": "The Reflective Zero-Cost strategy in RZ-NAS is a versatile Zero-Cost evaluation strategy that supports different Zero-Cost proxies. As discussed in Section 2.1, Zero-Cost proxies initially originate from gradient-based methods such as Grasp (Wang et al., 2020) and later evolve into more diverse proxies grounded in different theoretical frameworks, such as Zen Score (Lin et al., 2021).",
+    "retrieved_sources": [
+      "CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf",
+      "RZ_NAS.pdf"
+    ]
+  },
+  {
+    "query": "How many neural architectures were generated and evaluated in the Duvvuri et al. few-shot prompting study?",
+    "answer": "1,900 neural architectures were generated and evaluated in the Duvvuri et al. few-shot prompting study.",
+    "retrieved_sources": [
+      "Duvvuri_Enhancing_LLM-Based_Neural_Network_Generation_Few-Shot_Prompting_and_Efficient_Validation_CVPRW_2026_paper.pdf"
+    ]
+  },
+  {
+    "query": "What is DiffusionNAG and what role do diffusion models play in it?",
+    "answer": "DiffusionNAG is a novel conditional Neural Architecture Generation (NAG) framework that leverages diffusion models to efficiently generate task-optimal architectures. Diffusion models play a crucial role in DiffusionNAG by guiding the generation process, ensuring the generation of valid neural architectures, and overcoming the limitations of existing BO-based NAS methods.",
+    "retrieved_sources": [
+      "DiffusionNAG_ Predictor_Guided neural architecture with diffusion models.pdf",
+      "Evolution Meets diffusion- Efficient neural architecture generation.pdf"
+    ]
+  },
+  {
+    "query": "What datasets/benchmarks does CoLLM-NAS achieve state-of-the-art results on?",
+    "answer": "CoLLM-NAS achieves state-of-the-art results on ImageNet and NAS-Bench201.",
+    "retrieved_sources": [
+      "CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf"
+    ]
+  },
+  {
+    "query": "What is NAS-PEFT and how does it relate to parameter-efficient fine-tuning?",
+    "answer": "NAS-PEFT is a fine-grain NAS method designed to learn PET architectures. It uses a first-order approximation of the loss function and is computationally efficient. The method compares favorably with WARP in terms of parameter budget, as shown in Table 1. NAS-PEFT is designed to answer the question of which parts of the network are most efficient to fine-tune and what is the most parameter-efficient way to fine-tune them. It achieves this by pruning PET architectures from a PET architecture with 273k parameters, which fine-tunes all bias parameters, resulting in S-BitFit and U-BitFit architectures.",
+    "retrieved_sources": [
+      "NAS_PEFT.pdf"
+    ]
+  },
+  {
+    "query": "How does CoLLM-NAS's two-LLM approach differ from single-LLM NAS methods?",
+    "answer": "CoLLM-NAS's two-LLM approach differs from single-LLM NAS methods by introducing a Single LLM NAS (SiLLM-NAS) variant that consolidates both roles into a single LLM. This approach addresses the time-cost issue in existing LLM-to-NAS methods by reducing the number of interactions between the LLM and the NAS search space.",
+    "retrieved_sources": [
+      "CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf",
+      "RZ_NAS.pdf"
+    ]
+  },
+  {
+    "query": "How does the Navigator LLM's role differ from the Generator LLM's role in CoLLM-NAS?",
+    "answer": "In CoLLM-NAS, the Navigator LLM's role differs from the Generator LLM's role as follows:\n\n- **Navigator LLM**: The stateful Navigator LLM functions as a strategic guide with persistent memory. It dynamically formulates and redefines search strategies through iterative analysis of performance patterns emerging from evaluated architectures. It uses the LLM's inherent architectural prior and progressive insights learned from feedback and historical trajectory to guide the search process.\n\n- **Generator LLM**: The stateless Generator LLM synthesizes high-quality architectures. It uses the LLM's inherent architectural prior and progressive insights to create new candidate architectures. The Generator LLM does not have persistent memory and operates independently of the Navigator LLM's feedback.\n\nIn summary, the Navigator LLM provides adaptive search strategies based on the LLM's prior knowledge and feedback, while the Generator LLM creates new candidate architectures. They work in concert to guide the search process, enhancing the exploration-exploitation balance.",
+    "retrieved_sources": [
+      "CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf",
+      "RZ_NAS.pdf"
+    ]
+  },
+  {
+    "query": "What are the main limitations of traditional (non-LLM-guided) NAS methods, according to these papers?",
+    "answer": "According to the papers, the main limitations of traditional (non-LLM-guided) NAS methods include:\n\n1. **Limited Search Space and Simplified Networks**: These methods are constrained by the available search space, which often results in smaller architectures that are less complex. This limitation restricts the diversity of architectures that can be explored, leading to poorer performance on standard NAS benchmarks.\n\n2. **Inability to Support Large Networks**: Traditional methods are not capable of supporting larger, more complex networks, which are essential for real-world applications. This limitation hampers the scalability of NAS algorithms.\n\n3. **High Computational Costs**: Each architecture requires full training for evaluation, which is computationally expensive. This high cost makes the process of evaluating and refining architectures prohibitively expensive, especially for large-scale NAS problems.\n\n4. **Architecture Invalidity and Lack of Robustness**: The architecture generated by these methods may be invalid or lack robustness, making them less suitable for practical use. This invalidity and lack of robustness limit their ability to produce high-quality, deployable architectures.\n\n5. **Independent Training of Each Candidate**: Each candidate architecture is trained independently, which can lead to suboptimal solutions. This lack of collaboration among candidate architectures results in less effective search outcomes.\n\n6. **Lack of Scalability**: Traditional methods are not scalable to large-scale NAS problems, making them impractical for real-world applications. This limitation restricts their ability to explore a wide range of architectures efficiently.\n\nThese limitations highlight the need for more efficient and scalable methods in the field of neural architecture search.",
+    "retrieved_sources": [
+      "CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf",
+      "DiffusionNAG_ Predictor_Guided neural architecture with diffusion models.pdf",
+      "RZ_NAS.pdf",
+      "Resource_effective_NAS.pdf"
+    ]
+  },
+  {
+    "query": "How does RegNet's parameter efficiency compare to ResNet?",
+    "answer": "RegNet's parameter efficiency is demonstrated by comparing it to ResNet. Specifically, the context shows that RegNet is more parameter-efficient than simply stacking layers in vanilla ResNet. The RegNet with 20 layers surpasses the ResNet with 32 layers on both CIFAR-10 and CIFAR-100, demonstrating that RegNet has a stronger ability to express with the same parameters. Additionally, the context mentions that RegNet's 20-layered version has 0.32 M parameters, which is less than the ResNet's 0.47 M parameters, indicating that RegNet is more efficient in terms of parameter count.",
+    "retrieved_sources": [
+      "RegNet_Self-Regulated_Network_for_Image_Classification.pdf"
+    ]
+  },
+  {
+    "query": "What role does evolutionary search play in combination with diffusion models for architecture generation?",
+    "answer": "Evolutionary search plays a crucial role in combination with diffusion models for architecture generation. Specifically, Evolutionary Diffusion-based Neural Architecture Generation (EDNAG) leverages evolutionary algorithms to mimic the iterative refinement process of diffusion models. Fitness is used to guide the evolution of candidate architectures from diverse random populations to task-optimal solutions. This approach not only demonstrates the superior ability of architecture generation for EDNAG but also confirms its adaptability and effectiveness in large-scale search spaces and task datasets. Moreover, transitioning to different search spaces requires retraining the score network within the diffusion model, which can be troublesome and time-consuming.",
+    "retrieved_sources": [
+      "Evolution Meets diffusion- Efficient neural architecture generation.pdf"
+    ]
+  },
+  {
+    "query": "How do these papers use LLMs differently for guiding the architecture search process?",
+    "answer": "The papers use LLMs differently for guiding the architecture search process as follows:\n\n1. **Duvvuri_Enhancing_LLM-Based_Neural_Network_Generation_Few-Shot_Prompting_and_Efficient_Validation_CVPRW_2026_paper.pdf**:\n   - **Prompting**: The authors combine evolutionary algorithms with prompt-tuned LLMs to achieve competitive results on MNIST-1D and CLRS benchmarks.\n   - **LLM Usage**: The LLM is used to generate natural language prompts that guide the evolutionary algorithm.\n\n2. **RZ_NAS.pdf**:\n   - **Prompt-based Architecture Generation**: The authors design a structured, prompt-based approach to comprehensively understand the search task and architectures from both text and code levels.\n   - **LLM Integration**: They integrate LLM reflection modules to provide linguistic guidance within architecture optimization.\n   - **LLM Feedback**: The LLM generates feedback on the architecture, which is used to guide better mutations in subsequent iterations.\n\n3. **Recent research in evolutionary computation**:\n   - **LLMs Outperform Traditional Mutation**: Recent studies demonstrate that LLMs can outperform traditional mutation in genetic programming tasks, showcasing their ability to embed domain knowledge and intelligently explore the search space.\n\nIn summary, the papers use LLMs to generate prompts, provide feedback, and guide the evolutionary process in various ways, leveraging their capabilities to generate diverse and high-quality architectures.",
+    "retrieved_sources": [
+      "Duvvuri_Enhancing_LLM-Based_Neural_Network_Generation_Few-Shot_Prompting_and_Efficient_Validation_CVPRW_2026_paper.pdf",
+      "RZ_NAS.pdf"
+    ]
+  },
+  {
+    "query": "What is RegNet's design space?",
+    "answer": "RegNet's design space is characterized by a single ConvLSTM (Convolutional LSTM Network) applied in each layer, as shown in Fig. 5. This architecture is designed to be more efficient in terms of parameters, as demonstrated by the comparison with ResNet, which has a higher number of parameters. The RegNet architecture is designed to be more efficient by applying a single ConvLSTM to each layer, which reduces the number of parameters while maintaining or even improving the performance on image classification tasks.",
+    "retrieved_sources": [
+      "Neural Architecture Generator.pdf",
+      "RegNet_Self-Regulated_Network_for_Image_Classification.pdf"
+    ]
+  },
+  {
+    "query": "Does LLMatic use MAP-Elites, and if so, how?",
+    "answer": "No, the context does not mention LLMatic using MAP-Elites.",
+    "retrieved_sources": [
+      "Duvvuri_Enhancing_LLM-Based_Neural_Network_Generation_Few-Shot_Prompting_and_Efficient_Validation_CVPRW_2026_paper.pdf",
+      "Resource_effective_NAS.pdf"
+    ]
+  },
+  {
+    "query": "What is the exact GPU/hardware setup used to train RZ-NAS's models?",
+    "answer": "The exact GPU/hardware setup used to train RZ-NAS's models is a single RTX 4090 GPU. [Source: Resource_effective_NAS.pdf]",
+    "retrieved_sources": [
+      "Practical_Block-Wise_Neural_CVPR_2018_paper.pdf",
+      "RZ_NAS.pdf",
+      "Resource_effective_NAS.pdf"
+    ]
+  },
+  {
+    "query": "How would CoLLM-NAS's Coordinator module apply to a completely different domain outside NAS?",
+    "answer": "CoLLM-NAS's Coordinator module would apply to a completely different domain outside NAS by coordinating the interactions between the Navigator LLM and the Generator LLM to refine the search strategies based on the feedback from the Coordinator's validation and evaluation. This coordination would enable the system to adapt to new domains by leveraging the complementary strengths of the two LLMs, potentially improving the efficiency, effectiveness, and adaptability of the search process in various contexts.",
+    "retrieved_sources": [
+      "CoLLM-NAS_Collaborative_Large_Language_Models_for_Efficient_Knowledge-Guided_Neural_Architecture_CVPRW_2026_paper.pdf"
+    ]
+  }
+]

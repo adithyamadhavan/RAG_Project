@@ -33,31 +33,31 @@ Question: {query}
 Answer:"""
     return prompt
 
-def generate_answer(query: str, k: int = 5) -> dict:
-    """
-    Full RAG pipeline: retrieve relevant chunks, build a grounded prompt,
-    generate an answer via vLLM, and return the answer plus source metadata.
-    """
-    index, chunks, sources, model = load_index_data()
+def generate_answer(query: str, index, chunks, sources, model, k: int = 5) -> dict:
     retrieved = search(query, index, chunks, sources, model, top_k=k)
-
     prompt = build_prompt(query, retrieved)
-
     response = client.chat.completions.create(
         model=Model_name,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.1,  # low temperature — favor grounded, consistent answers over creativity
+        temperature=0.1,
     )
-
     answer = response.choices[0].message.content
     cited_sources = sorted(set(r["source"] for r in retrieved))
+    return {"query": query, "answer": answer, "retrieved_sources": cited_sources}
 
-    return {
-        "query": query,
-        "answer": answer,
-        "retrieved_sources": cited_sources,
-    }
 
+import time
+
+def generate_with_retry(query, *args, max_retries=2, **kwargs):
+    for attempt in range(max_retries + 1):
+        try:
+            return generate_answer(query, *args, **kwargs)
+        except Exception as e:
+            if attempt < max_retries:
+                print(f"  Retry {attempt+1} after error: {e}")
+                time.sleep(5)
+            else:
+                raise
 
 if __name__ == "__main__":
     test_questions = [
