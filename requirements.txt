@@ -6,3 +6,4 @@ langchain-huggingface
 faiss-cpulangchain
 langchain-community
 openai
+rank-bm25
