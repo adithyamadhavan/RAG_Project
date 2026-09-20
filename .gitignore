@@ -4,5 +4,10 @@ __pycache__/
 .env
 corpus/*.pdf
 *.faiss
-.DS_Storefaiss_index.bin
+.DS_Store
+faiss_index.bin
 chunk_data.pkl
+bm25_data.pkl
+eval_results_naive.json
+eval_results_hybrid.json
+relevance_labels.json
