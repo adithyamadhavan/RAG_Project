@@ -27,7 +27,7 @@ def bm25_search(query: str, bm25: BM25Okapi, chunks: List[str], sources: List[st
             "rank": rank + 1,
             "score": float(scores[idx]),
             "source": sources[idx],
-            "text": chunks[idx],
+            "chunk": chunks[idx],
             "chunk_index": idx,  # needed later for RRF fusion
         })
     return results
@@ -66,4 +66,4 @@ if __name__ == "__main__":
         results = bm25_search(query, bm25, all_chunks, chunk_sources, top_k=3)
         for r in results:
             print(f"\n[Rank {r['rank']}] (score={r['score']:.3f}) Source: {r['source']}")
-            print(r['text'][:250])
+            print(r['chunk'][:250])

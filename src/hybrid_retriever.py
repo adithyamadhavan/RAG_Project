@@ -4,9 +4,9 @@ import pickle
 
 from retrieve import load_index_data, search as dense_search
 from bm25_retriever import bm25_search
-def _get_text(r: Dict) -> str:
-    """Handles inconsistent key naming across retrieval methods (chunk vs text)."""
-    return r.get("text") or r.get("chunk") or ""
+# def _get_text(r: Dict) -> str:
+#     """Handles inconsistent key naming across retrieval methods (chunk vs text)."""
+#     return r.get("text") or r.get("chunk") or ""
 
 
 def reciprocal_rank_fusion(
@@ -19,8 +19,8 @@ def reciprocal_rank_fusion(
 
     for results in [dense_results, bm25_results]:
         for r in results:
-            chunk_text = _get_text(r)
-            key = f"{r['source']}::{chunk_text[:100]}"
+            # chunk_text = _get_text(r)
+            key = f"{r['source']}::{r['chunk'][:100]}"
             rrf_contribution = 1 / (rrf_k + r["rank"])
             scores[key] = scores.get(key, 0) + rrf_contribution
             chunk_lookup[key] = r
@@ -34,7 +34,7 @@ def reciprocal_rank_fusion(
             "rank": rank + 1,
             "rrf_score": scores[key],
             "source": chunk["source"],
-            "chunk": _get_text(chunk),
+            "chunk": chunk['chunk'],
         })
     return fused_results
 
