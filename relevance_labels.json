@@ -1,0 +1,124 @@
+{
+  "naive": {
+    "What is quality diversity optimization in the context of NAS?": [
+      3
+    ],
+    "What are the three main components of the CoLLM-NAS framework?": [
+      3
+    ],
+    "What search space does RegNet use for its architecture?": [
+      3
+    ],
+    "How much does CoLLM-NAS reduce search costs compared to existing methods?": [
+      3
+    ],
+    "What datasets were used to evaluate RZ-NAS?": [
+      3
+    ],
+    "What is the Reflective Zero-Cost strategy in RZ-NAS?": [
+      4
+    ],
+    "How many neural architectures were generated and evaluated in the Duvvuri et al. few-shot prompting study?": [
+      3
+    ],
+    "What is DiffusionNAG and what role do diffusion models play in it?": [
+      3
+    ],
+    "What datasets/benchmarks does CoLLM-NAS achieve state-of-the-art results on?": [
+      3
+    ],
+    "What is NAS-PEFT and how does it relate to parameter-efficient fine-tuning?": [
+      3
+    ],
+    "How does CoLLM-NAS's two-LLM approach differ from single-LLM NAS methods?": [
+      3
+    ],
+    "How does the Navigator LLM's role differ from the Generator LLM's role in CoLLM-NAS?": [
+      4
+    ],
+    "What are the main limitations of traditional (non-LLM-guided) NAS methods, according to these papers?": [
+      4
+    ],
+    "How does RegNet's parameter efficiency compare to ResNet?": [
+      3
+    ],
+    "What role does evolutionary search play in combination with diffusion models for architecture generation?": [
+      2
+    ],
+    "How do these papers use LLMs differently for guiding the architecture search process?": [
+      2
+    ],
+    "What is RegNet's design space?": [
+      2
+    ],
+    "Does LLMatic use MAP-Elites, and if so, how?": [
+      3
+    ],
+    "What is the exact GPU/hardware setup used to train RZ-NAS's models?": [
+      3
+    ],
+    "How would CoLLM-NAS's Coordinator module apply to a completely different domain outside NAS?": [
+      3
+    ]
+  },
+  "hybrid": {
+    "What is quality diversity optimization in the context of NAS?": [
+      3
+    ],
+    "What are the three main components of the CoLLM-NAS framework?": [
+      4
+    ],
+    "What search space does RegNet use for its architecture?": [
+      4
+    ],
+    "How much does CoLLM-NAS reduce search costs compared to existing methods?": [
+      4
+    ],
+    "What datasets were used to evaluate RZ-NAS?": [
+      4
+    ],
+    "What is the Reflective Zero-Cost strategy in RZ-NAS?": [
+      4
+    ],
+    "How many neural architectures were generated and evaluated in the Duvvuri et al. few-shot prompting study?": [
+      3
+    ],
+    "What is DiffusionNAG and what role do diffusion models play in it?": [
+      2
+    ],
+    "What datasets/benchmarks does CoLLM-NAS achieve state-of-the-art results on?": [
+      3
+    ],
+    "What is NAS-PEFT and how does it relate to parameter-efficient fine-tuning?": [
+      2
+    ],
+    "How does CoLLM-NAS's two-LLM approach differ from single-LLM NAS methods?": [
+      3
+    ],
+    "How does the Navigator LLM's role differ from the Generator LLM's role in CoLLM-NAS?": [
+      4
+    ],
+    "What are the main limitations of traditional (non-LLM-guided) NAS methods, according to these papers?": [
+      4
+    ],
+    "How does RegNet's parameter efficiency compare to ResNet?": [
+      2
+    ],
+    "What role does evolutionary search play in combination with diffusion models for architecture generation?": [
+      2
+    ],
+    "How do these papers use LLMs differently for guiding the architecture search process?": [
+      2
+    ],
+    "What is RegNet's design space?": [
+      3
+    ],
+    "Does LLMatic use MAP-Elites, and if so, how?": [
+      3
+    ],
+    "What is the exact GPU/hardware setup used to train RZ-NAS's models?": [
+      3
+    ],
+    "How would CoLLM-NAS's Coordinator module apply to a completely different domain outside NAS?": []
+  }
+}

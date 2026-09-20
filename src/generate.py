@@ -61,7 +61,25 @@ def generate_with_retry(query, *args, max_retries=2, **kwargs):
             else:
                 raise
 
+# if __name__ == "__main__":
+#     test_questions = [
+#         "What is quality diversity in neural architecture search?",
+#         "How does CoLLM-NAS coordinate between multiple LLMs?",
+#         "What is RegNet's design space?",
+#     ]
+
+#     for q in test_questions:
+#         result = generate_answer(q)
+#         print(f"\n{'='*80}")
+#         print(f"Q: {result['query']}")
+#         print(f"{'='*80}")
+#         print(f"A: {result['answer']}")
+#         print(f"\nSources used: {result['retrieved_sources']}")
 if __name__ == "__main__":
+    from retrieve import load_index_data
+
+    index, chunks, sources, model = load_index_data()
+
     test_questions = [
         "What is quality diversity in neural architecture search?",
         "How does CoLLM-NAS coordinate between multiple LLMs?",
@@ -69,7 +87,7 @@ if __name__ == "__main__":
     ]
 
     for q in test_questions:
-        result = generate_answer(q)
+        result = generate_answer(q, index, chunks, sources, model)
         print(f"\n{'='*80}")
         print(f"Q: {result['query']}")
         print(f"{'='*80}")

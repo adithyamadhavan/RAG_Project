@@ -90,6 +90,74 @@ pipelines. Documented here as a known limitation of the community MLX backend
 deployment on CUDA hardware would likely not exhibit this specific failure mode, but
 the `max_tokens` cap is good practice regardless.
 
+## Week 2: Quantified retrieval comparison (naive vs. hybrid+rerank)
+
+After Week 1's eyeballed comparisons proved inconclusive, all 20 test questions were
+hand-labeled for chunk-level relevance (`relevance_labels.json`) against both
+pipelines' actual retrieved chunks, and scored with MRR and NDCG@5
+(`compute_final_metrics.py`).
+
+| Metric | Naive (dense-only) | Hybrid + Rerank | Change |
+|---|---|---|---|
+| MRR | 0.3458 | 0.3292 | −4.8% |
+| NDCG@5 | 0.5092 | 0.4835 | −5.0% |
+
+**Finding: hybrid search + reranking performed measurably worse than naive dense
+retrieval on this corpus and question set — a real, unexpected result, not noise
+(both independent metrics agree in direction and magnitude).**
+
+Per-question analysis (`analyze_regression.py`) shows the effect is broad and mild,
+not one catastrophic failure:
+- **6 questions regressed** — in every case the relevant chunk's rank shifted by
+  exactly +1 (e.g. rank 3 → 4)
+- **3 questions improved** — in every case by exactly −1 (e.g. rank 3 → 2)
+- **11 questions unchanged**
+- **1 question (a deliberately speculative, cross-domain synthesis question) lost
+  its relevant chunk entirely** from hybrid+rerank's top-5 — notably, the one
+  complete miss occurred on the hardest, most ambiguous question in the set
+
+**Interpretation:** dense embedding similarity alone was already reasonably
+well-calibrated for this corpus of 10 dense academic papers. Reranking
+(`bge-reranker-base`) appears to weakly favor longer, more technical-sounding
+passages over concise, directly-answering ones — consistent with a pattern
+observed during manual relevance labeling, where citation-list entries or
+tangentially related passages sometimes scored above the chunk that actually
+answered the question.
+
+**This result should not be generalized beyond this specific setup** — 20 questions
+over 10 papers is a small test bed, and the finding is corpus- and
+question-distribution-specific. It does, however, demonstrate the value of
+measuring rather than assuming: added retrieval complexity (BM25 fusion, RRF,
+cross-encoder reranking) is not automatically an improvement, and the only way to
+know is to score it.
+
+**Follow-up directions this motivates** (not yet implemented):
+- Test an alternative or larger reranker model (e.g. `bge-reranker-large`) for
+  better calibration
+- Narrow the candidate shortlist fed into reranking (currently k=10) to reduce
+  exposure to tangentially-relevant "noise" chunks
+- Revisit whether RRF fusion parameters (k=60) are well-tuned for this corpus size
+
+## RAGAS: attempted, reverted due to dependency conflicts
+
+RAGAS was evaluated as a second, LLM-as-judge-based eval framework (faithfulness,
+answer relevancy, context precision/recall) to complement the MRR/NDCG scoring
+above. Installation repeatedly caused severe dependency conflicts with the
+project's core LangChain-based pipeline — `ragas` requires `langchain-core`
+versions incompatible with `langgraph`, `langchain-huggingface`, and
+`langchain-experimental`, all used elsewhere in this project. Two install attempts
+(latest RAGAS, then a pinned older version) both broke the main pipeline's imports,
+requiring a full dependency restoration each time.
+
+**Decision: RAGAS was dropped in favor of the custom MRR/NDCG implementation
+above.** This was a deliberate tradeoff to avoid ongoing environment instability
+close to a project deadline, not an oversight — a legitimate real-world engineering
+call when a tool's dependency footprint threatens a working system for marginal
+additional signal. A production system wanting both RAGAS-style faithfulness
+scoring and a stable core pipeline would isolate RAGAS in its own environment
+(e.g. a separate venv or container), calling it only against already-saved eval
+JSON files rather than integrating it into the main dependency tree.
+
 ## Eval harness
 
 - `tests/test_questions.md` — 20 hand-written questions spanning factoid, analytical,
