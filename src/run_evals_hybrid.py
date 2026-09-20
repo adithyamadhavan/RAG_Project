@@ -19,7 +19,7 @@ def generate_hybrid_answer(query: str, k: int = 10, final_k : int = 5) -> dict:
     # build_prompt expects "text" key; hybrid/rerank results use "chunk"
     context_chunks = [{"source": r["source"], "chunk": r["chunk"]} for r in reranked]
     prompt = build_prompt(query, context_chunks)
-
+    retrieved_chunks = [r["chunk"] for r in reranked]
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
@@ -28,7 +28,7 @@ def generate_hybrid_answer(query: str, k: int = 10, final_k : int = 5) -> dict:
     )
     answer = response.choices[0].message.content
     cited_sources = sorted(set(r["source"] for r in reranked))
-    return {"query": query, "answer": answer, "retrieved_sources": cited_sources}
+    return {"query": query, "answer": answer, "retrieved_sources": cited_sources,"retrieved_chunks": retrieved_chunks}
 
 
 def run_hybrid_eval(output_path: str = "eval_results_hybrid.json"):

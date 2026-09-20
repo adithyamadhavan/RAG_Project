@@ -36,6 +36,7 @@ Answer:"""
 def generate_answer(query: str, index, chunks, sources, model, k: int = 5) -> dict:
     retrieved = search(query, index, chunks, sources, model, top_k=k)
     prompt = build_prompt(query, retrieved)
+    retrieved_chunks = [r["chunk"] for r in retrieved]
     response = client.chat.completions.create(
         model=Model_name,
         messages=[{"role": "user", "content": prompt}],
@@ -44,7 +45,7 @@ def generate_answer(query: str, index, chunks, sources, model, k: int = 5) -> di
     )
     answer = response.choices[0].message.content
     cited_sources = sorted(set(r["source"] for r in retrieved))
-    return {"query": query, "answer": answer, "retrieved_sources": cited_sources}
+    return {"query": query, "answer": answer, "retrieved_sources": cited_sources,"retrieved_chunks": retrieved_chunks}
 
 
 import time

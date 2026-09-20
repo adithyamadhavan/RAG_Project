@@ -7,3 +7,4 @@ faiss-cpulangchain
 langchain-community
 openai
 rank-bm25
+ragas
