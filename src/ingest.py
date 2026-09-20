@@ -3,11 +3,20 @@ from pathlib import Path
 from typing import List, Optional , Dict
 import re
 
+# def clean_extracted_text(text: str) -> str:
+#     """Removes hyphenation artifacts from line-wrapped PDF text."""
+#     # Join words split by hyphen + newline: "tradi-\ntional" -> "traditional"
+#     text = re.sub(r'-\n(\w)', r'\1', text)
+#     text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
+#     return text
+
+import re
+
 def clean_extracted_text(text: str) -> str:
-    """Removes hyphenation artifacts from line-wrapped PDF text."""
-    # Join words split by hyphen + newline: "tradi-\ntional" -> "traditional"
     text = re.sub(r'-\n(\w)', r'\1', text)
     text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
+    text = re.sub(r'<\|im_start\|>.*?<\|im_end\|>', '', text, flags=re.DOTALL)
+    text = re.sub(r'<\|im_start\|>|<\|im_end\|>', '', text)
     return text
 
 def extract_text_from_pdf(pdf_path: str) -> List[str]:
