@@ -9,5 +9,6 @@ faiss_index.bin
 chunk_data.pkl
 bm25_data.pkl
 eval_results_naive.json
+eval_results_naive2.json
 eval_results_hybrid.json
 relevance_labels.json
