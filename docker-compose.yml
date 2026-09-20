@@ -1,0 +1,13 @@
+services:
+  rag-app:
+    build: .
+    environment:
+      - VLLM_BASE_URL=http://host.docker.internal:8000/v1
+    volumes:
+      - ./faiss_index.bin:/app/faiss_index.bin
+      - ./chunk_data.pkl:/app/chunk_data.pkl
+      - ./bm25_data.pkl:/app/bm25_data.pkl
+      - ./eval_results_naive.json:/app/eval_results_naive.json
+      - ./eval_results_hybrid.json:/app/eval_results_hybrid.json
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

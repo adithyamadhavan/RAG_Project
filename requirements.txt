@@ -3,8 +3,8 @@ langchain-text-splitters
 langchain-experimental
 sentence-transformers
 langchain-huggingface
-faiss-cpulangchain
+faiss-cpu
+langchain
 langchain-community
 openai
 rank-bm25
-ragas

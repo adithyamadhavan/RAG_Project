@@ -1,11 +1,12 @@
 from openai import OpenAI
 from retrieve import load_index_data,search
 
-
-VLLM_base_url = "http://127.0.0.1:8000/v1"
+import os
+VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://127.0.0.1:8000/v1")
+#VLLM_base_url = "http://127.0.0.1:8000/v1"
 Model_name = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
 
-client = OpenAI(base_url=VLLM_base_url,api_key="not-needed",timeout=60)  # timeout in seconds
+client = OpenAI(base_url=VLLM_BASE_URL,api_key="not-needed",timeout=60)  # timeout in seconds
 
 
 def build_prompt(query: str, retrieved_chunks: list) -> str:
