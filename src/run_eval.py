@@ -46,7 +46,7 @@ from retrieve import load_index_data
 from generate import generate_with_retry
 import json
 
-def run_full_eval(output_path="eval_results_naive.json", start_from=0):
+def run_full_eval(output_path="eval_results_naive.json", start_from=0): 
     index, chunks, sources, model = load_index_data()  # loaded once, not per-question
     results = []
     for i, question in enumerate(TEST_QUESTIONS[start_from:], start_from + 1):

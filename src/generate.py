@@ -5,7 +5,7 @@ from retrieve import load_index_data,search
 VLLM_base_url = "http://127.0.0.1:8000/v1"
 Model_name = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
 
-client = OpenAI(base_url=VLLM_base_url,api_key="not-needed")
+client = OpenAI(base_url=VLLM_base_url,api_key="not-needed",timeout=60)  # timeout in seconds
 
 
 def build_prompt(query: str, retrieved_chunks: list) -> str:
@@ -40,6 +40,7 @@ def generate_answer(query: str, index, chunks, sources, model, k: int = 5) -> di
         model=Model_name,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.1,
+        max_tokens=400,
     )
     answer = response.choices[0].message.content
     cited_sources = sorted(set(r["source"] for r in retrieved))
