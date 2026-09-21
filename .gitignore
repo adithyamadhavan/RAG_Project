@@ -2,7 +2,7 @@ agents_venv/
 __pycache__/
 *.pyc
 .env
-corpus/*.pdf
+#corpus/*.pdf
 *.faiss
 .DS_Store
 faiss_index.bin
