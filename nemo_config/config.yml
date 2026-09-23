@@ -1,0 +1,16 @@
+models:
+  - type: main
+    engine: openai
+    model: mlx-community/Qwen2.5-1.5B-Instruct-4bit
+    parameters:
+      base_url: "http://127.0.0.1:8000/v1"
+      api_key: "not-needed"
+
+rails:
+  input:
+    flows:
+      - self check input
+  output:
+    flows:
+      - self check output
+prompting_mode: standard
