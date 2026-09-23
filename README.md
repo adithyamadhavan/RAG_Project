@@ -197,3 +197,6 @@ JSON files rather than integrating it into the main dependency tree.
 - **Reranking:** BAAI/bge-reranker-base (cross-encoder)
 - **PDF extraction:** PyMuPDF
 - **Chunking:** LangChain RecursiveCharacterTextSplitter (production), SemanticChunker (evaluated)
+
+
+PDF → chunk → [NEW STEP: add context to chunk] → embed → FAISS index → retrieve → generate answer
