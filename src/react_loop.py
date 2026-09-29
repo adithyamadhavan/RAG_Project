@@ -57,15 +57,26 @@ def execute_tool_with_retry(name: str, arg: str) -> str:
 
 def run_agent(user_query: str, verbose: bool = True) -> dict:
     # Check long-term memory before starting the loop
-    relevant_memories = memory.retrieve(user_query, k=2)
+    # relevant_memories = memory.retrieve(user_query, k=2)
+    # memory_context = ""
+    # if relevant_memories:
+    #     memory_context = "\n\nRelevant past interactions:\n" + "\n".join(
+    #         f"- {m['text']}" for m in relevant_memories
+    #     )
+    #     if verbose:
+    #         print(f"[memory] found {len(relevant_memories)} relevant past interaction(s)")
+    RELEVANCE_THRESHOLD = 0.5  # empirically set — see check_memory_distances.py output
+    scored_memories = memory.retrieve_with_scores(user_query, k=2)
+    relevant_memories = [m["memory"] for m in scored_memories if m["distance"] < RELEVANCE_THRESHOLD]
     memory_context = ""
     if relevant_memories:
         memory_context = "\n\nRelevant past interactions:\n" + "\n".join(
             f"- {m['text']}" for m in relevant_memories
         )
         if verbose:
-            print(f"[memory] found {len(relevant_memories)} relevant past interaction(s)")
-
+            print(f"[memory] found {len(relevant_memories)} relevant past interaction(s) under threshold")
+    elif verbose and scored_memories:
+        print(f"[memory] {len(scored_memories)} candidate(s) found, none under threshold {RELEVANCE_THRESHOLD} — skipping")
     messages = [
         {"role": "system", "content": build_system_prompt() + memory_context},
         {"role": "user", "content": user_query},

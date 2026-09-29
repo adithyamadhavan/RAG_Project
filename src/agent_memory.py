@@ -48,6 +48,20 @@ class LongTermMemory:
         _, indices = self.index.search(vec, k)
         return [self.memories[i] for i in indices[0]]
 
+    def retrieve_with_scores(self, query: str, k: int = 3) -> list:
+        """Same as retrieve(), but also returns the FAISS distance for each
+        result, so we can see how 'close' a match actually is before deciding
+        whether to trust it."""
+        if not self.memories:
+            return []
+        k = min(k, len(self.memories))
+        vec = self.model.encode([query], convert_to_numpy=True).astype("float32")
+        distances, indices = self.index.search(vec, k)
+        return [
+            {"memory": self.memories[i], "distance": float(d)}
+            for d, i in zip(distances[0], indices[0])
+        ]
+
 
 if __name__ == "__main__":
     mem = LongTermMemory()
