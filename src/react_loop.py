@@ -3,6 +3,9 @@ import time
 import os
 from openai import OpenAI
 from agents_tools import AVAILABLE_TOOLS
+from agent_memory import LongTermMemory
+
+memory = LongTermMemory()
 
 VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://127.0.0.1:8000/v1")
 MODEL_NAME = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
@@ -53,12 +56,22 @@ def execute_tool_with_retry(name: str, arg: str) -> str:
 
 
 def run_agent(user_query: str, verbose: bool = True) -> dict:
+    # Check long-term memory before starting the loop
+    relevant_memories = memory.retrieve(user_query, k=2)
+    memory_context = ""
+    if relevant_memories:
+        memory_context = "\n\nRelevant past interactions:\n" + "\n".join(
+            f"- {m['text']}" for m in relevant_memories
+        )
+        if verbose:
+            print(f"[memory] found {len(relevant_memories)} relevant past interaction(s)")
+
     messages = [
-        {"role": "system", "content": build_system_prompt()},
+        {"role": "system", "content": build_system_prompt() + memory_context},
         {"role": "user", "content": user_query},
     ]
     trace = []
-
+    last_tool_call = None
     for i in range(1, MAX_ITERATIONS + 1):
         response = client.chat.completions.create(
             model=MODEL_NAME, messages=messages, temperature=0.1, max_tokens=300,
@@ -84,10 +97,17 @@ def run_agent(user_query: str, verbose: bool = True) -> dict:
             messages.append({"role": "user", "content": f"Tool result: {result}"})
         elif "FINAL_ANSWER:" in content:
             answer = content.split("FINAL_ANSWER:")[-1].strip()
+            #return {"query": user_query, "answer": answer, "trace": trace, "iterations": i}
+            # After building the return dict for a successful FINAL_ANSWER:
+            memory.add(
+            f"User asked: {user_query}. Agent answered: {answer}",
+            metadata={"iterations": i},
+            )
             return {"query": user_query, "answer": answer, "trace": trace, "iterations": i}
         else:
             messages.append({"role": "assistant", "content": content})
             messages.append({"role": "user", "content": "Reply with either TOOL_CALL: or FINAL_ANSWER:, nothing else."})
+
     return {
         "query": user_query,
         "answer": "Gave up: hit the iteration cap without a final answer.",
