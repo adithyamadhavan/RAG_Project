@@ -189,18 +189,53 @@ def build_graph():
     return graph.compile(checkpointer=checkpointer) 
 
 
+# if __name__ == "__main__":
+#     app = build_graph()
+
+#     for q in ["What is 15 * 23 + 7?"]:
+#         print(f"\n{'=' * 70}\nQuery: {q}\n{'=' * 70}")
+#         result = app.invoke(
+#             {"messages": [
+#                 {"role": "system", "content": build_system_prompt()},
+#                 {"role": "user", "content": q},
+#             ], "iterations": 0},
+#             config={"configurable": {"thread_id": "test-1"}},
+#         )
+#         last = result["messages"][-1]
+#         last_content = last.content if hasattr(last, "content") else last["content"]
+#         print(f"\nFINAL (last message): {last_content}")
 if __name__ == "__main__":
     app = build_graph()
 
-    for q in ["What is 15 * 23 + 7?"]:
+    for q in [
+        "What is 15 * 23 + 7?",
+        "According to the corpus, what does the Navigator LLM do in CoLLM-NAS?",
+    ]:
         print(f"\n{'=' * 70}\nQuery: {q}\n{'=' * 70}")
+
+        scored = memory.retrieve_with_scores(q, k=2)
+        relevant = [m["memory"] for m in scored if m["distance"] < RELEVANCE_THRESHOLD]
+        # memory_context = ""
+        # if relevant:
+        #     memory_context = "\n\nRelevant past interactions:\n" + "\n".join(
+        #         f"- {m['text']}" for m in relevant
+        #     )
+        #     print(f"[memory] found {len(relevant)} relevant past interaction(s) under threshold")
+        memory_context = ""
+        if relevant:
+            memory_context = (
+                "\n\nRelevant past interactions (for context only — you must "
+                "still respond using TOOL_CALL or FINAL_ANSWER format):\n"
+                + "\n".join(f"- {m['text']}" for m in relevant)
+            )
         result = app.invoke(
             {"messages": [
-                {"role": "system", "content": build_system_prompt()},
+                {"role": "system", "content": build_system_prompt() + memory_context},
                 {"role": "user", "content": q},
-            ], "iterations": 0},
-            config={"configurable": {"thread_id": "test-1"}},
+            ], "iterations": 0, "last_call": None},
+            config={"configurable": {"thread_id": f"test-{q[:10]}"}},
         )
         last = result["messages"][-1]
         last_content = last.content if hasattr(last, "content") else last["content"]
-        print(f"\nFINAL (last message): {last_content}")
+        print(f"\nFINAL: {last_content}")
+        
