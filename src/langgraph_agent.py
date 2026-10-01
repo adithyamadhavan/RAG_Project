@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from typing import Annotated, TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -16,13 +19,13 @@ import os
 from openai import OpenAI
 from agent_memory import LongTermMemory
 
+
 VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://127.0.0.1:8000/v1")
 MODEL_NAME = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
 client = OpenAI(base_url=VLLM_BASE_URL, api_key="not-needed", timeout=60.0)
 memory = LongTermMemory()
 RELEVANCE_THRESHOLD = 0.5
 MAX_ITERATIONS = 5
-
 
 # def build_system_prompt() -> str:
 #     tool_lines = "\n".join(
@@ -205,6 +208,12 @@ def build_graph():
 #         last_content = last.content if hasattr(last, "content") else last["content"]
 #         print(f"\nFINAL (last message): {last_content}")
 if __name__ == "__main__":
+    import os
+    tracing_enabled = os.environ.get("LANGCHAIN_TRACING_V2") == "true"
+    print(f"[langsmith] tracing enabled: {tracing_enabled}")
+    if not tracing_enabled:
+        print("[langsmith] set LANGCHAIN_TRACING_V2=true and LANGCHAIN_API_KEY to enable full dashboard tracing")
+
     app = build_graph()
 
     for q in [
