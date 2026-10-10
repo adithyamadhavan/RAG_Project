@@ -1,0 +1,64 @@
+[
+  {
+    "id": "nav-1",
+    "type": "qa",
+    "question": "What does the Navigator LLM do in CoLLM-NAS?",
+    "keywords": ["navigator", "strategy", "memory", "generator"],
+    "min_hits": 2,
+    "expected_source": "CoLLM-NAS"
+  },
+  {
+    "id": "components-1",
+    "type": "qa",
+    "question": "What are the key components of the CoLLM-NAS framework?",
+    "keywords": ["navigator", "generator"],
+    "min_hits": 2,
+    "expected_source": "CoLLM-NAS"
+  },
+  {
+    "id": "rznas-1",
+    "type": "qa",
+    "question": "What is RZ-NAS and what problem does it address?",
+    "keywords": [],
+    "min_hits": 1,
+    "expected_source": "RZ-NAS",
+    "TODO": "Fill keywords (words a correct answer must contain) from the RZ-NAS paper, then this question is scored."
+  },
+  {
+    "id": "diffnag-1",
+    "type": "qa",
+    "question": "What is DiffusionNAG and how does it generate architectures?",
+    "keywords": [],
+    "min_hits": 1,
+    "expected_source": "DiffusionNAG",
+    "TODO": "Fill keywords from the DiffusionNAG paper."
+  },
+  {
+    "id": "regnet-1",
+    "type": "qa",
+    "question": "What design-space idea does RegNet introduce?",
+    "keywords": [],
+    "min_hits": 1,
+    "expected_source": "RegNet",
+    "TODO": "Fill keywords from the RegNet paper."
+  },
+  {
+    "id": "qa-extra-1",
+    "type": "qa",
+    "question": "TODO: write a question about any paper in your corpus",
+    "keywords": [],
+    "min_hits": 1,
+    "expected_source": "",
+    "TODO": "Add 4-6 more questions, mix of papers, each with 2-4 keywords."
+  },
+  {
+    "id": "ooc-1",
+    "type": "ooc",
+    "question": "What is the capital of France?"
+  },
+  {
+    "id": "ooc-2",
+    "type": "ooc",
+    "question": "What batch size did the GPT-4 training run use?"
+  }
+]
