@@ -1,13 +1,21 @@
 mode,id,type,task_ok,source_ok,latency_s,llm_calls,retries,error,answer
-plain_rag,nav-1,qa,True,True,4.03,1,0,,"The Navigator LLM in CoLLM-NAS serves as a strategic guide with persistent memory, generating an initial exploration strategy based on target accuracy and resource constraints. It then transmits this "
-plain_rag,components-1,qa,True,True,2.12,1,0,,"The key components of the CoLLM-NAS framework are a Navigator LLM, a Generator LLM, and a Coordinator module."
-plain_rag,ooc-1,ooc,False,,1.12,1,0,,The capital of France is Paris.
-plain_rag,ooc-2,ooc,False,,1.46,1,0,,The batch size used for the GPT-4 training run is 512.
-supervisor,nav-1,qa,True,True,1.79,1,0,,"The Navigator LLM in CoLLM-NAS serves as a strategic guide with persistent memory, generating an initial exploration strategy for the search process."
-supervisor,components-1,qa,True,True,3.79,1,0,,The key components of the CoLLM-NAS framework are:  - **Navigator LLM**: A stateful LLM that functions as a strategic guide with persistent memory. It provides guidance to the system during the search
-supervisor,ooc-1,ooc,False,,1.35,1,0,,The capital of France is Paris.
-supervisor,ooc-2,ooc,False,,1.41,1,0,,The batch size used for the GPT-4 training run is 512.
-swarm,nav-1,qa,True,True,3.25,1,0,,"The Navigator LLM in CoLLM-NAS functions as a strategic guide with persistent memory, generating an initial exploration strategy based on target accuracy and resource constraint. It transmits this str"
-swarm,components-1,qa,True,True,3.24,1,0,,"The key components of the CoLLM-NAS framework are:  1. **Navigator LLM**: Functions as a strategic guide with persistent memory, guiding the search process. 2. **Generator LLM**: Provides knowledge to"
-swarm,ooc-1,ooc,False,,1.16,1,0,,The capital of France is Paris.
-swarm,ooc-2,ooc,False,,1.81,1,0,,The batch size used for the GPT-4 training run is 512.
+plain_rag,nav-1,qa,True,True,3.17,1,0,,"The Navigator LLM in CoLLM-NAS functions as a strategic guide with persistent memory, generating an initial exploration strategy based on target accuracy and resource constraint. It transmits this str"
+plain_rag,components-1,qa,True,True,2.97,1,0,,"The key components of the CoLLM-NAS framework are:  1. **Navigator LLM**: Functions as a strategic guide with persistent memory, guiding the search process. 2. **Generator LLM**: Provides solutions to"
+plain_rag,ooc-1,ooc,False,,1.01,1,0,,The capital of France is Paris.
+plain_rag,ooc-2,ooc,False,,1.25,1,0,,The batch size used for the GPT-4 training run is 512.
+supervisor,nav-1,qa,True,True,1.99,1,0,,"The Navigator LLM in CoLLM-NAS functions as a strategic guide with persistent memory, generating an initial exploration strategy based on target accuracy and resource constraint. It provides the initi"
+supervisor,components-1,qa,True,True,2.83,1,0,,"The key components of the CoLLM-NAS framework are:  1. **Navigator LLM**: Functions as a strategic guide with persistent memory, guiding the search process. 2. **Generator LLM**: Provides knowledge to"
+supervisor,ooc-1,ooc,False,,1.04,1,0,,The capital of France is Paris.
+supervisor,ooc-2,ooc,False,,1.23,1,0,,The batch size used for the GPT-4 training run is 512.
+supervisor_llm,nav-1,qa,True,True,4.33,4,0,,"The Navigator LLM in CoLLM-NAS functions as a strategic guide with persistent memory, generating an initial exploration strategy based on target accuracy and resource constraint. It transmits this str"
+supervisor_llm,components-1,qa,True,True,2.84,4,0,,"The key components of the CoLLM-NAS framework are a Navigator LLM, a Generator LLM, and a Coordinator module."
+supervisor_llm,ooc-1,ooc,False,,2.22,4,0,,The capital of France is Paris.
+supervisor_llm,ooc-2,ooc,False,,3.98,4,0,,The batch size used for the GPT-4 training run is 512.
+swarm,nav-1,qa,True,True,3.9,1,0,,"The Navigator LLM in CoLLM-NAS functions as a strategic guide with persistent memory, generating an initial exploration strategy based on target accuracy and resource constraint. It transmits this str"
+swarm,components-1,qa,True,True,4.27,1,0,,"The key components of the CoLLM-NAS framework are:  1. **Navigator LLM**: Functions as a strategic guide with persistent memory, guiding the search process. 2. **Generator LLM**: Provides knowledge to"
+swarm,ooc-1,ooc,False,,1.98,1,0,,The capital of France is Paris.
+swarm,ooc-2,ooc,False,,1.66,1,0,,The batch size used for the GPT-4 training run is 512.
+agentic_rag,nav-1,qa,True,True,4.01,1,0,,"The Navigator LLM in CoLLM-NAS functions as a strategic guide with persistent memory, generating an initial exploration strategy based on target accuracy and resource constraint. It transmits this str"
+agentic_rag,components-1,qa,True,True,3.81,1,0,,"The key components of the CoLLM-NAS framework are:  - **Navigator LLM**: Functions as a strategic guide with persistent memory, providing guidance through the search process. - **Generator LLM**: Part"
+agentic_rag,ooc-1,ooc,True,,0.57,0,0,,NOT_IN_CORPUS: the indexed papers do not contain information that answers this question.
+agentic_rag,ooc-2,ooc,False,,1.39,1,0,,The batch size used for the GPT-4 training run is 512.
