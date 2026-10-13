@@ -49,6 +49,8 @@ app = FastAPI(title="Agentic RAG API", version="0.1.0", lifespan=lifespan)
 
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=3, max_length=500)
+    # Send the thread_id from a previous response to continue that conversation.
+    thread_id: Optional[str] = None
 
 
 class ApproveRequest(BaseModel):
@@ -91,7 +93,10 @@ def health():
 
 @app.post("/ask", response_model=AskResponse)
 def ask(req: AskRequest):
-    thread_id = uuid.uuid4().hex
+    thread_id = req.thread_id or uuid.uuid4().hex
+    if req.thread_id and app.state.graph.get_state(_cfg(thread_id)).next:
+        raise HTTPException(status_code=409,
+                            detail="This thread is waiting for /approve")
     t0 = time.perf_counter()
     result = app.state.graph.invoke(ag._initial_state(req.question),
                                     config=_cfg(thread_id))

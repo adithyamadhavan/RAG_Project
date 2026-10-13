@@ -12,3 +12,4 @@ eval_results_naive.json
 eval_results_naive2.json
 eval_results_hybrid.json
 relevance_labels.json
+agent_memory_*

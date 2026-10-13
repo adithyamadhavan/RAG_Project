@@ -27,7 +27,7 @@
 import os
 import re
 import itertools
-from typing import TypedDict
+from typing import Annotated, TypedDict
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
@@ -48,6 +48,7 @@ GRADER = os.environ.get("GRADER", "score")        # "score" | "crag" | "own" (1.
 CONTENT_GUARD = os.environ.get("CONTENT_GUARD") == "1"
 OUTPUT_PRESIDIO = os.environ.get("OUTPUT_PRESIDIO") == "1"
 SHOW_SCORES = bool(os.environ.get("SHOW_SCORES"))
+USE_LTM = os.environ.get("USE_LTM") == "1"        # long-term memory, default off
 
 ABSTAIN_TEXT = (f"{NOT_FOUND}: the indexed papers do not contain information "
                 "that answers this question.")
@@ -66,6 +67,11 @@ def _get_index():
     return _INDEX
 
 
+def _keep_recent(old, new):
+    """Reducer for conversation history: append, keep the last 6 turns."""
+    return ((old or []) + (new or []))[-6:]
+
+
 class AgenticState(TypedDict):
     task: str          # original user question (after input redaction)
     query: str         # query used for retrieval (may be reformulated)
@@ -80,6 +86,9 @@ class AgenticState(TypedDict):
     approved: bool
     cache_hit: bool
     cache_sim: float
+    # Conversation memory. Persisted by the checkpointer per thread_id, so it is
+    # NOT reset in _initial_state: a new turn on the same thread sees it.
+    history: Annotated[list, _keep_recent]
 
 
 def _initial_state(task):
@@ -118,7 +127,45 @@ def input_guard(state: AgenticState) -> dict:
 def route_after_input(state: AgenticState) -> str:
     if state["blocked"]:
         return "approval"
-    return "tool_node" if state["route"] == "tool" else "cache_lookup"
+    return "tool_node" if state["route"] == "tool" else "contextualize"
+
+
+# ---------------------------------------------------------------- conversation memory
+def contextualize(state: AgenticState) -> dict:
+    """Turn a follow-up ("what about its limitations?") into a standalone
+    question using the last two turns. No history -> no LLM call."""
+    hist = state.get("history") or []
+    if not hist:
+        return {"path": _p(state, "contextualize(none)")}
+    turns = "\n".join(f"Q: {t['q']}\nA: {t['a'][:200]}" for t in hist[-2:])
+    prompt = f"""Conversation so far:
+{turns}
+
+Follow-up question: {state['task']}
+
+Rewrite the follow-up as a complete standalone question that names the thing it refers to.
+If it is already standalone, repeat it unchanged. Reply with the question only."""
+    resp = counted_chat(client, model=MODEL_NAME,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.0, max_tokens=60)
+    new_q = (resp.choices[0].message.content or "").strip().strip('"').split("\n")[0]
+    if not new_q or len(new_q) > 300:
+        new_q = state["task"]
+    print(f"[contextualize] {state['task']!r} -> {new_q!r}")
+    return {"task": new_q, "query": new_q, "path": _p(state, "contextualize")}
+
+
+def remember(state: AgenticState) -> dict:
+    """Store the finished turn in history (approved, non-abstain answers only)."""
+    if (state["approved"] and not state["blocked"]
+            and NOT_FOUND not in state["answer"]):
+        if USE_LTM and not os.environ.get("EVAL_RUN"):   # evals auto-approve: never memorise them
+            from agent_memory import store_turn
+            outcome = store_turn(state["task"], state["answer"], model=_get_index()[3])
+            print(f"[memory] long-term: {outcome}")
+        return {"history": [{"q": state["task"], "a": state["answer"]}],
+                "path": _p(state, "remember")}
+    return {}
 
 
 # ---------------------------------------------------------------- semantic cache
@@ -144,7 +191,7 @@ def route_after_cache(state: AgenticState) -> str:
 
 
 def route_after_output(state: AgenticState) -> str:
-    return "end" if state["cache_hit"] else "approval"
+    return "remember" if state["cache_hit"] else "approval"
 
 
 def cache_write(state: AgenticState) -> dict:
@@ -266,6 +313,14 @@ def abstain_node(state: AgenticState) -> dict:
 
 def generate_node(state: AgenticState) -> dict:
     prompt = build_prompt(state["task"], state["findings"])
+    if USE_LTM:
+        from agent_memory import recall
+        past = recall(state["task"], model=_get_index()[3])
+        if past:
+            print(f"[memory] {len(past)} relevant past interaction(s)")
+            prompt += ("\n\nEarlier conversations with this user (background only; "
+                       "they are NOT evidence, answer only from the retrieved "
+                       "information above):\n" + "\n".join(f"- {t}" for t in past))
     resp = counted_chat(
         client, model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
@@ -298,10 +353,13 @@ def build_agentic_graph():
     g.add_node("approval", approval_node)
     g.add_node("cache_lookup", cache_lookup)
     g.add_node("cache_write", cache_write)
+    g.add_node("contextualize", contextualize)
+    g.add_node("remember", remember)
 
     g.add_edge(START, "input_guard")
     g.add_conditional_edges("input_guard", route_after_input, {
-        "tool_node": "tool_node", "cache_lookup": "cache_lookup", "approval": "approval"})
+        "tool_node": "tool_node", "contextualize": "contextualize", "approval": "approval"})
+    g.add_edge("contextualize", "cache_lookup")
     g.add_conditional_edges("cache_lookup", route_after_cache, {
         "output_guard": "output_guard", "retrieve": "retrieve"})
     g.add_edge("tool_node", "output_guard")
@@ -312,9 +370,10 @@ def build_agentic_graph():
     g.add_edge("generate", "output_guard")
     g.add_edge("abstain", "output_guard")
     g.add_conditional_edges("output_guard", route_after_output, {
-        "end": END, "approval": "approval"})
+        "remember": "remember", "approval": "approval"})
     g.add_edge("approval", "cache_write")
-    g.add_edge("cache_write", END)
+    g.add_edge("cache_write", "remember")
+    g.add_edge("remember", END)
     return g.compile(checkpointer=InMemorySaver())
 
 
