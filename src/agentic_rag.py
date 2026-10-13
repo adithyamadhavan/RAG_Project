@@ -43,8 +43,8 @@ client = OpenAI(base_url=VLLM_BASE_URL, api_key="not-needed", timeout=60.0)
 
 # Retrieval-score gate. None = off. Tune with SHOW_SCORES=1 (lower L2 = closer).
 _md = os.environ.get("MAX_DIST")
-MAX_DIST = float(_md) if _md else None
-GRADER = os.environ.get("GRADER", "own")          # "own" | "crag" | "score"
+MAX_DIST = float(_md) if _md else 0.8             # calibrated: in-corpus <= 0.52, France 1.08
+GRADER = os.environ.get("GRADER", "score")        # "score" | "crag" | "own" (1.5B LLM grader, unreliable)
 CONTENT_GUARD = os.environ.get("CONTENT_GUARD") == "1"
 OUTPUT_PRESIDIO = os.environ.get("OUTPUT_PRESIDIO") == "1"
 SHOW_SCORES = bool(os.environ.get("SHOW_SCORES"))
@@ -78,12 +78,15 @@ class AgenticState(TypedDict):
     route: str         # "tool" | "rag"
     path: str          # trace of nodes visited, for evals / README
     approved: bool
+    cache_hit: bool
+    cache_sim: float
 
 
 def _initial_state(task):
     return {"task": task, "query": task, "attempts": 0, "findings": "",
             "best_dist": -1.0, "verdict": "", "answer": "", "blocked": False,
-            "route": "", "path": "", "approved": False}
+            "route": "", "path": "", "approved": False,
+            "cache_hit": False, "cache_sim": -1.0}
 
 
 def _p(state, node):
@@ -115,7 +118,45 @@ def input_guard(state: AgenticState) -> dict:
 def route_after_input(state: AgenticState) -> str:
     if state["blocked"]:
         return "approval"
-    return "tool_node" if state["route"] == "tool" else "retrieve"
+    return "tool_node" if state["route"] == "tool" else "cache_lookup"
+
+
+# ---------------------------------------------------------------- semantic cache
+def _use_cache():
+    return os.environ.get("USE_CACHE") == "1"
+
+
+def cache_lookup(state: AgenticState) -> dict:
+    if not _use_cache():
+        return {"path": _p(state, "cache_lookup(off)")}
+    from semantic_cache import CACHE
+    answer, sim = CACHE.lookup(_get_index()[3], state["task"])
+    if answer is not None:
+        print(f"[cache] HIT (similarity {sim:.3f})")
+        return {"answer": answer, "cache_hit": True, "cache_sim": sim,
+                "approved": True, "path": _p(state, "cache_hit")}
+    print(f"[cache] miss (best similarity {sim:.3f})")
+    return {"cache_sim": sim, "path": _p(state, "cache_lookup")}
+
+
+def route_after_cache(state: AgenticState) -> str:
+    return "output_guard" if state["cache_hit"] else "retrieve"
+
+
+def route_after_output(state: AgenticState) -> str:
+    return "end" if state["cache_hit"] else "approval"
+
+
+def cache_write(state: AgenticState) -> dict:
+    """Only approved, grounded RAG answers are cached."""
+    if (_use_cache() and state["approved"] and state["route"] == "rag"
+            and not state["blocked"] and not state["cache_hit"]
+            and NOT_FOUND not in state["answer"]):
+        from semantic_cache import CACHE
+        CACHE.put(_get_index()[3], state["task"], state["answer"])
+        print("[cache] stored")
+        return {"path": _p(state, "cache_write")}
+    return {}
 
 
 def output_guard(state: AgenticState) -> dict:
@@ -255,10 +296,14 @@ def build_agentic_graph():
     g.add_node("generate", generate_node)
     g.add_node("output_guard", output_guard)
     g.add_node("approval", approval_node)
+    g.add_node("cache_lookup", cache_lookup)
+    g.add_node("cache_write", cache_write)
 
     g.add_edge(START, "input_guard")
     g.add_conditional_edges("input_guard", route_after_input, {
-        "tool_node": "tool_node", "retrieve": "retrieve", "approval": "approval"})
+        "tool_node": "tool_node", "cache_lookup": "cache_lookup", "approval": "approval"})
+    g.add_conditional_edges("cache_lookup", route_after_cache, {
+        "output_guard": "output_guard", "retrieve": "retrieve"})
     g.add_edge("tool_node", "output_guard")
     g.add_edge("retrieve", "grade")
     g.add_conditional_edges("grade", route_after_grade, {
@@ -266,8 +311,10 @@ def build_agentic_graph():
     g.add_edge("reformulate", "retrieve")
     g.add_edge("generate", "output_guard")
     g.add_edge("abstain", "output_guard")
-    g.add_edge("output_guard", "approval")
-    g.add_edge("approval", END)
+    g.add_conditional_edges("output_guard", route_after_output, {
+        "end": END, "approval": "approval"})
+    g.add_edge("approval", "cache_write")
+    g.add_edge("cache_write", END)
     return g.compile(checkpointer=InMemorySaver())
 
 
@@ -294,7 +341,7 @@ if __name__ == "__main__":
         import json
         from retrieve import search
         index, chunks, sources, model = _get_index()
-        items = json.load(open(os.environ.get("EVAL_SET", "src/agent_evals.json")))
+        items = json.load(open(os.environ.get("EVAL_SET", "evals/agent_eval_set.json")))
         for it in items:
             res = search(it["question"], index, chunks, sources, model, 3)
             ds = [round(_dist(r), 3) for r in res if _dist(r) is not None]
