@@ -1918,3 +1918,176 @@ observability tool and interactive terminal I/O, not purely cosmetic.
 - **Agents:** hand-rolled ReAct loop, LangGraph (StateGraph, conditional edges, checkpointing)
 - **Agent memory:** FAISS-based long-term memory, same embedding model as RAG
 - **Observability:** LangSmith (verified end-to-end)
+
+
+# RAG + Agents Project
+
+A RAG pipeline over neural-architecture-search papers (CoLLM-NAS, RZ-NAS, RegNet, DiffusionNAG and others),
+with several agent patterns built and measured against each other, running on a small local model.
+
+> Status: commands section. Results, architecture diagram and findings are added on Oct 15.
+
+## Stack
+
+- Embeddings: `BAAI/bge-small-en-v1.5` (384-dim), FAISS `IndexFlatL2`, BM25, RRF, `bge-reranker-base`
+- Model: `mlx-community/Qwen2.5-1.5B-Instruct-4bit`, served by vllm-mlx at `localhost:8000` (OpenAI-compatible)
+- Agents: LangGraph (checkpointer, human-in-the-loop `interrupt`)
+- Guardrails: NeMo + Presidio + regex PII
+- Service: FastAPI; front end: Streamlit
+
+## Setup
+
+```bash
+python -m venv agents_venv && source agents_venv/bin/activate
+pip install -r requirements.txt
+pip install fastapi uvicorn streamlit requests      # service + front end
+```
+
+Build the index once (creates `faiss_index.bin` and `chunk_data.pkl`):
+
+```bash
+python src/ingest.py
+```
+
+Start the model server and leave it running (use your usual vllm-mlx command; it must serve
+`mlx-community/Qwen2.5-1.5B-Instruct-4bit` on port 8000). It handles **one generation at a time**.
+
+Everything below runs from the project root.
+
+## Run the app (three terminals)
+
+```bash
+# 1) model server  (your usual vllm-mlx command, port 8000)
+
+# 2) API
+uvicorn api:app --app-dir src --port 8001
+#    docs page: http://127.0.0.1:8001/docs      health: /health
+
+# 3) front end
+streamlit run src/app.py                          # http://localhost:8501
+```
+
+Optional switches when starting the API:
+
+```bash
+USE_CACHE=1 uvicorn api:app --app-dir src --port 8001                  # semantic cache on
+USE_CACHE=1 USE_LTM=1 uvicorn api:app --app-dir src --port 8001        # + long-term memory
+```
+
+API endpoints: `GET /health`, `POST /ask` (`{"question": "...", "thread_id": "optional"}`),
+`POST /approve` (`{"thread_id": "...", "decision": "approve" | "reject"}`).
+
+## Run each pattern from the command line
+
+```bash
+python src/rag_plain.py               # plain RAG baseline
+python src/supervisor_agent.py        # rule-based supervisor + human approval
+python src/supervisor_llm.py          # LLM-routed supervisor
+python src/swarm_agents.py            # swarm (agents hand off directly)
+python src/agentic_rag.py             # full agentic RAG graph (guards, abstain, memory, approval)
+python src/workflows.py "your question"   # evaluator-optimizer + routing
+```
+
+Ask a different question: `Q="What is 15 * 23 + 7?" python src/agentic_rag.py`
+
+## Benchmarks (latency and LLM calls)
+
+Index is loaded before timing; 1 warm-up run, then 3 timed runs, median reported.
+
+```bash
+BENCH=1 python src/rag_plain.py
+BENCH=1 python src/supervisor_agent.py
+BENCH=1 python src/supervisor_llm.py
+BENCH=1 python src/swarm_agents.py
+BENCH=1 python src/agentic_rag.py
+BENCH=1 python src/workflows.py
+```
+
+## Evaluations
+
+```bash
+python src/run_agent_evals.py                      # all six modes, writes evals/agent_eval_results.csv
+ONLY=workflows python src/run_agent_evals.py       # one mode (or ONLY=agentic_rag,workflows)
+ONLY=workflows SHOW_SCORES=1 python src/run_agent_evals.py   # per-sentence grounding scores
+```
+
+Questions live in `evals/agent_eval_set.json`. `type: qa` is scored on expected keywords and source;
+`type: ooc` (out-of-corpus) is scored on whether the system abstains. Questions with empty `keywords` are skipped.
+
+Retrieval evals from earlier weeks: `python src/run_eval.py`, `python src/run_evals_hybrid.py`, `python src/run_ragas_evals.py`.
+
+## Semantic cache
+
+```bash
+python src/semantic_cache.py calibrate    # similarity of paraphrase vs similar-but-different pairs (no LLM needed)
+python src/semantic_cache.py demo         # ask / paraphrase / different / repeat; shows hit or miss
+```
+
+## Long-term memory
+
+```bash
+python src/agent_memory.py                # demo: add, dedupe (same memory twice -> "updated"), retrieve
+rm agent_memory_index.bin agent_memory_data.pkl     # forget everything
+USE_LTM=1 python src/agentic_rag.py       # turn it on for a run
+```
+
+## Tuning the abstain gate
+
+```bash
+python src/agentic_rag.py calibrate       # best retrieval distance for each eval question (no LLM needed)
+SHOW_SCORES=1 python src/agentic_rag.py   # print distances during a run
+MAX_DIST=0.8 python src/agentic_rag.py    # distance above which the system abstains (default 0.8)
+```
+
+## Environment variables
+
+| Variable | Default | Effect |
+|---|---|---|
+| `VLLM_BASE_URL` | `http://127.0.0.1:8000/v1` | Model server address |
+| `BENCH` | off | `1` = benchmark mode (warm-up + 3 timed runs) |
+| `Q` | Navigator question | Question for `agentic_rag.py` |
+| `ONLY` | all | Comma-separated modes for `run_agent_evals.py` |
+| `EVAL_SET` | `evals/agent_eval_set.json` | Eval question file |
+| `SHOW_SCORES` | off | Print retrieval distances and grounding scores |
+| `SHOW_CHUNKS` | off | Print retrieved chunks (plain, supervisor, swarm) |
+| `GRADER` | `score` | Relevance grader: `score` (distance), `crag` (your CRAG grader), `own` (LLM, unreliable at 1.5B) |
+| `MAX_DIST` | `0.8` | Abstain when the best L2 distance is above this |
+| `USE_CACHE` | off | `1` = semantic cache |
+| `CACHE_THRESHOLD` | `0.95` | Cosine similarity needed for a cache hit |
+| `CACHE_TTL` | `3600` | Cache entry lifetime in seconds |
+| `USE_LTM` | off | `1` = long-term memory |
+| `MEMORY_DIR` | `.` | Where the memory files are stored |
+| `MEMORY_DUP_DISTANCE` | `0.15` | Distance under which a new memory updates an old one |
+| `MEMORY_RELEVANCE` | `0.5` | Distance under which a memory is shown to the model |
+| `GROUND_MIN` | `0.4` | Share of a sentence's words that must appear in the sources |
+| `MAX_REVISIONS` | `2` | Revision attempts in the evaluator-optimizer |
+| `CONTENT_GUARD` | off | `1` = LLM content check on the query |
+| `OUTPUT_PRESIDIO` | off | `1` = Presidio PII scan on the answer |
+| `ROUTER_GUARD` | on | `0` = let the LLM router's choice stand (shows misrouting) |
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| Front end shows "Cannot reach the API" | `uvicorn` is not running. Start it (step 2 above) and check `/health` |
+| `GET / 404` in the uvicorn log | Normal: there is no page at `/`. Open `/docs` |
+| `503 text_generation_busy` | The model server handles one request at a time; wait, or stop other runs. Benchmarks retry automatically |
+| `Connection refused` on port 8000 | The model server is not running |
+| "That conversation was lost" | The API restarted; pending approvals live in memory. Click **New conversation** |
+| Everything abstains with `GRADER=own` | The 1.5B model grades NO for everything. Use the default `GRADER=score` |
+| `FileNotFoundError: evals/agent_eval_set.json` | Run from the project root |
+
+## Layout
+
+| File | Purpose |
+|---|---|
+| `src/ingest.py`, `retrieve.py`, `hybrid_retriever.py`, `reranker.py` | Index and retrieval |
+| `src/corrective_rag.py` | CRAG grading and query reformulation |
+| `src/guardrails.py`, `guardrails_presi.py`, `nemo_config/` | PII and content guardrails |
+| `src/react_loop.py`, `agents_tools.py`, `langgraph_agent.py` | Tool loop and tools |
+| `src/rag_plain.py`, `supervisor_agent.py`, `supervisor_llm.py`, `swarm_agents.py` | Agent patterns compared |
+| `src/agentic_rag.py` | Merged agentic RAG graph |
+| `src/workflows.py` | Evaluator-optimizer and routing |
+| `src/semantic_cache.py`, `agent_memory.py` | Cache and long-term memory |
+| `src/api.py`, `src/app.py` | FastAPI service and Streamlit front end |
+| `src/bench_utils.py`, `prompts.py`, `run_agent_evals.py` | Shared timing, prompt, eval runner |
