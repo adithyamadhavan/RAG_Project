@@ -1,0 +1,107 @@
+[
+  {
+    "id": "nav-1",
+    "type": "qa",
+    "question": "What does the Navigator LLM do in CoLLM-NAS?",
+    "keywords": ["navigator", "strategy", "memory", "generator"],
+    "min_hits": 2,
+    "expected_source": "CoLLM-NAS"
+  },
+  {
+    "id": "components-1",
+    "type": "qa",
+    "question": "What are the key components of the CoLLM-NAS framework?",
+    "keywords": ["navigator", "generator"],
+    "min_hits": 2,
+    "expected_source": "CoLLM-NAS"
+  },
+  {
+    "id": "collm-2",
+    "type": "qa",
+    "question": "What is the role of the Generator LLM in CoLLM-NAS?",
+    "keywords": ["generator", "candidate", "architecture"],
+    "min_hits": 2,
+    "expected_source": "CoLLM-NAS"
+  },
+  {
+    "id": "collm-3",
+    "type": "qa",
+    "question": "How do the Navigator and Generator LLMs work together in CoLLM-NAS?",
+    "keywords": ["navigator", "generator", "strategy", "feedback"],
+    "min_hits": 2,
+    "expected_source": "CoLLM-NAS"
+  },
+  {
+    "id": "rznas-1",
+    "type": "qa",
+    "question": "What is RZ-NAS and what problem does it address?",
+    "keywords": ["zero-cost", "zero-shot", "reflect", "llm", "proxy"],
+    "min_hits": 2,
+    "expected_source": "RZ-NAS"
+  },
+  {
+    "id": "rznas-2",
+    "type": "qa",
+    "question": "How does RZ-NAS use large language models to improve zero-cost proxies?",
+    "keywords": ["reflect", "proxy", "llm", "prompt"],
+    "min_hits": 2,
+    "expected_source": "RZ-NAS"
+  },
+  {
+    "id": "diffnag-1",
+    "type": "qa",
+    "question": "What is DiffusionNAG and how does it generate architectures?",
+    "keywords": ["diffusion", "predictor", "guid", "generat"],
+    "min_hits": 2,
+    "expected_source": "DiffusionNAG"
+  },
+  {
+    "id": "diffnag-2",
+    "type": "qa",
+    "question": "What role does the predictor play in DiffusionNAG?",
+    "keywords": ["predictor", "guid", "accuracy", "property"],
+    "min_hits": 2,
+    "expected_source": "DiffusionNAG"
+  },
+  {
+    "id": "regnet-1",
+    "type": "qa",
+    "question": "What design-space idea does RegNet introduce?",
+    "keywords": ["design space", "population", "linear", "regular"],
+    "min_hits": 2,
+    "expected_source": "RegNet"
+  },
+  {
+    "id": "regnet-2",
+    "type": "qa",
+    "question": "How does RegNet refine a design space to find good networks?",
+    "keywords": ["design space", "width", "depth", "population", "linear"],
+    "min_hits": 2,
+    "expected_source": "RegNet"
+  },
+  {
+    "id": "ooc-1",
+    "type": "ooc",
+    "question": "What is the capital of France?"
+  },
+  {
+    "id": "ooc-2",
+    "type": "ooc",
+    "question": "What batch size did the GPT-4 training run use?"
+  },
+  {
+    "id": "ooc-3",
+    "type": "ooc",
+    "question": "How many parameters does GPT-4 have?"
+  },
+  {
+    "id": "ooc-4",
+    "type": "ooc",
+    "question": "What learning rate was used to train Llama 3?"
+  },
+  {
+    "id": "ooc-5",
+    "type": "ooc",
+    "question": "Who won the 2022 FIFA World Cup?"
+  }
+]

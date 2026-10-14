@@ -41,6 +41,19 @@ VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://127.0.0.1:8000/v1")
 MODEL_NAME = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
 client = OpenAI(base_url=VLLM_BASE_URL, api_key="not-needed", timeout=60.0)
 
+# LangSmith tracing (optional). With LANGSMITH_TRACING=true and LANGSMITH_API_KEY set,
+# every LangGraph node is traced automatically, and wrapping the client below adds each
+# LLM call (prompt, output, latency) as a child span. Off by default: nothing is sent.
+if os.environ.get("LANGSMITH_TRACING", "").lower() == "true" or \
+   os.environ.get("LANGCHAIN_TRACING_V2", "").lower() == "true":
+    try:
+        from langsmith.wrappers import wrap_openai
+        client = wrap_openai(client)
+        print("[langsmith] tracing on, project:",
+              os.environ.get("LANGSMITH_PROJECT") or os.environ.get("LANGCHAIN_PROJECT") or "default")
+    except ImportError:
+        print("[langsmith] tracing requested but 'langsmith' is not installed: pip install langsmith")
+
 # Retrieval-score gate. None = off. Tune with SHOW_SCORES=1 (lower L2 = closer).
 _md = os.environ.get("MAX_DIST")
 MAX_DIST = float(_md) if _md else 0.8             # calibrated: in-corpus <= 0.52, France 1.08
