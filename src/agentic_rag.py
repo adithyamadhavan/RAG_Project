@@ -37,6 +37,13 @@ from openai import OpenAI
 from bench_utils import counted_chat, benchmark
 from prompts import build_prompt, NOT_FOUND
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+
 VLLM_BASE_URL = os.environ.get("VLLM_BASE_URL", "http://127.0.0.1:8000/v1")
 MODEL_NAME = "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
 client = OpenAI(base_url=VLLM_BASE_URL, api_key="not-needed", timeout=60.0)

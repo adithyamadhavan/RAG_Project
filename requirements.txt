@@ -8,3 +8,10 @@ langchain
 langchain-community
 openai
 rank-bm25
+mcp<2
+langsmith
+python-dotenv
+fastapi
+uvicorn
+streamlit
+requests
