@@ -2091,3 +2091,339 @@ MAX_DIST=0.8 python src/agentic_rag.py    # distance above which the system abst
 | `src/semantic_cache.py`, `agent_memory.py` | Cache and long-term memory |
 | `src/api.py`, `src/app.py` | FastAPI service and Streamlit front end |
 | `src/bench_utils.py`, `prompts.py`, `run_agent_evals.py` | Shared timing, prompt, eval runner |
+
+
+
+# RAG + Agents Project
+
+A RAG pipeline over neural-architecture-search papers (CoLLM-NAS, RZ-NAS, RegNet, DiffusionNAG and others),
+with six agent patterns built and measured against each other on the same 15 questions, running on a small
+local model (Qwen2.5-1.5B, 4-bit). The point of the project is the measurement: what each pattern costs,
+where it fails, and which cheap checks actually help a weak model.
+
+Around the core graph it has: a FastAPI service, a Streamlit front end, a semantic cache, conversation and
+long-term memory, PII guardrails, human-in-the-loop approval, an MCP server, and LangSmith tracing.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI["Streamlit<br/>src/app.py"] -->|"HTTP: /ask, /approve"| API["FastAPI<br/>src/api.py"]
+    API --> G["LangGraph agentic RAG<br/>src/agentic_rag.py"]
+    MCP["MCP server<br/>src/mcp_server.py<br/>search_corpus, answer_question"] --> G
+    G --> LLM["vllm-mlx :8000<br/>Qwen2.5-1.5B 4-bit"]
+    G --> IDX[("FAISS + BM25 index<br/>1255 chunks")]
+    G --> CACHE[("semantic cache")]
+    G --> LTM[("long-term memory")]
+    G -.->|traces| LS["LangSmith"]
+```
+
+The graph inside `agentic_rag.py`:
+
+```mermaid
+flowchart TD
+    A[input_guard<br/>redact PII] -->|math question| T[tool_node<br/>calculator]
+    A --> B[contextualize<br/>rewrite follow-ups]
+    B --> C{cache_lookup}
+    C -->|hit| O
+    C -->|miss| R[retrieve]
+    R --> Gr{grade<br/>best distance <= 0.8?}
+    Gr -->|yes| Ge[generate]
+    Gr -->|no, first try| Rf[reformulate] --> R
+    Gr -->|no, second try| Ab[abstain<br/>NOT_IN_CORPUS]
+    T --> O[output_guard]
+    Ge --> O
+    Ab --> O
+    O -->|fresh answer| Ap[approval<br/>human approve / reject]
+    O -->|cache hit| Rm
+    Ap --> Cw[cache_write] --> Rm[remember]
+```
+
+## Results
+
+15 questions: 10 in-corpus (`qa`, scored on expected keywords and source paper) and 5 out-of-corpus
+(`ooc`, scored on whether the system refuses). One run per mode on an M-series Mac, 1.5B model, every
+answer auto-approved. Latency is the median per question including the human-approval step (auto-approved).
+
+| Mode | In-corpus (of 10) | Refused out-of-corpus (of 5) | Task % (15) | Source % | Median s | LLM calls |
+|---|---|---|---|---|---|---|
+| plain_rag | 5 | 1 | 40 | 100 | 2.64 | 1.0 |
+| supervisor (rules) | 5 | 2 | 47 | 100 | 2.18 | 1.0 |
+| supervisor_llm | 5 | 1 | 40 | 100 | 3.47 | 4.0 |
+| swarm | 5 | 2 | 47 | 100 | 2.30 | 1.0 |
+| agentic_rag | 5 | 3 | 53 | 100 | 2.26 | 0.9 |
+| workflows (evaluator-optimizer + routing) | 5 | 4 | 60 | 100 | 2.54 | 1.1 |
+
+Other checks from the same run:
+- LLM router (`supervisor_llm`): 30 of 45 routing decisions correct (67%); the guard overrode 15.
+- Human-in-the-loop: approve returns the answer, reject blocks it (both pass).
+- Agentic extras: a math question takes the calculator branch and returns 352 (pass); an email address in the
+  query is redacted before retrieval and generation (pass).
+
+**Read the in-corpus column with care.** All six modes score the same 5/10 and the same five questions fail
+everywhere (RZ-NAS x2, DiffusionNAG predictor, RegNet x2). When every architecture fails the same questions, the likely
+cause is the scoring (the keyword lists), not the systems, so this run cannot rank the patterns on in-corpus
+quality. The out-of-corpus column does separate them. With 15 questions, one question is 6.7 points, so small
+differences are not significant. Treat this as a measured comparison on a small set, not a benchmark.
+
+Reproduce: `python src/run_agent_evals.py` (details in `evals/agent_eval_results.csv`).
+
+## Findings
+
+1. **A 1.5B model cannot grade relevance.** The LLM grader answered NO for every question, including ones the
+   corpus clearly answers, and ignored quoted evidence. It was replaced by a retrieval-distance gate
+   (`MAX_DIST=0.8`, calibrated: in-corpus best distance was at most 0.52, "capital of France" was 1.08).
+   A cheap non-LLM signal beat the LLM judge at this model size.
+2. **The distance gate stops unrelated questions, not related ones the papers don't answer.** It stopped
+   France and the 2022 World Cup (distances 1.08 and 0.93). It let through the GPT-4 and Llama 3 questions
+   (0.44-0.59 distance), which sound like they belong to the corpus. Those need a check on the answer.
+3. **A groundedness check on the answer helps, and has limits.** The `workflows` pattern checks each
+   answer sentence against the retrieved text (numbers must appear in the sources, plus word overlap) and
+   revises or refuses. It caught the invented GPT-4 batch size and refused 4 of 5 out-of-corpus questions, the best
+   of the six. It did not catch the Llama 3 learning-rate question, and by design it cannot catch an invented
+   claim that contains no numbers and reuses source words. Correct paraphrases also score only 0.50-0.56, so the
+   threshold (0.4) is a compromise.
+4. **LLM routing is the weakest and most expensive pattern here.** `supervisor_llm` used 4 model calls per
+   question against 1 for the others, scored no better, and picked the wrong route a third of the time. A rules
+   guard overrode the bad routes (0 failed runs with the guard on), which is a reason to use rules where rules
+   are enough.
+5. **Retrieval was not the bottleneck.** Source accuracy is 100% in every mode on the in-corpus questions: the
+   right paper is always retrieved. The differences between modes come from what happens after retrieval
+   (gating, checking, refusing).
+6. **Semantic cache: a strict threshold beats a clever one.** At 0.92 similarity, "how does DiffusionNAG generate
+   architectures" and "...evaluate architectures" (0.926) would share an answer. At 0.95 there were 0 false
+   hits and 3 of 5 paraphrases hit. Only approved, grounded answers are cached; refusals, tool answers and
+   blocked requests never are.
+7. **Cache and follow-ups interact.** Follow-ups ("what are its key components?") are rewritten into standalone
+   questions before the cache lookup, so the cache is keyed on the right question, but each follow-up still pays
+   one model call for the rewrite. In one observed case a cache hit took about 1.9s with chat history and 0.5s without.
+8. **Evaluation caveats.** Keyword scoring is a rough proxy for answer quality, 15 questions is a small sample,
+   and everything ran on one machine and one run per mode. The numbers show relative behaviour, not absolute quality.
+
+## Limitations
+
+- The checker passes invented claims that contain no numbers and reuse source words.
+- Pending human approvals and the semantic cache live in memory and are lost when the API restarts.
+- The 1.5B model is the main quality limit; the patterns would score differently on a larger model.
+- The cache is a linear scan (fine to a few hundred entries).
+- Everything runs locally; there is no cloud deployment yet.
+
+## v1.1 (not done)
+
+- Wire long-term memory into the supervisor and swarm graphs (the `recall()` and `store_turn()` helpers make this a couple of lines each)
+- Check the cache with the raw question first and rewrite only on a miss
+- Parallel retrieval and prompt chaining
+- A larger cache evaluation and a larger eval set with tuned keywords
+- An LLM faithfulness judge (forced-reasoning `VERDICT:`) to compare with the deterministic checker
+- A LangSmith dataset for the eval set
+- An MCP client; FastAPI `/metrics`, tests with `TestClient`, Docker
+- Send the compare-route answers through the groundedness checker
+- Redirect `GET /` to `/docs`
+- Deployment on Azure (see below)
+
+## How this maps to a cloud stack
+
+The model sits behind one OpenAI-compatible client in `agentic_rag.py`, so moving to Azure OpenAI means swapping
+that client for `AzureOpenAI` and the model name for the deployment name. FAISS would become Azure AI Search
+(or stay FAISS in the container), and the API would run as a container (for example on Azure Container Apps).
+The checks, gate and evaluation harness do not depend on where the model runs, but the thresholds
+(`MAX_DIST`, `GROUND_MIN`, cache threshold) were calibrated on this model and embedding and would need
+re-calibrating.
+
+## Stack
+
+- Embeddings: `BAAI/bge-small-en-v1.5` (384-dim), FAISS `IndexFlatL2`, BM25, RRF, `bge-reranker-base`
+- Model: `mlx-community/Qwen2.5-1.5B-Instruct-4bit`, served by vllm-mlx at `localhost:8000` (OpenAI-compatible)
+- Agents: LangGraph (checkpointer, human-in-the-loop `interrupt`)
+- Guardrails: NeMo + Presidio + regex PII
+- Service: FastAPI; front end: Streamlit; tool server: MCP; tracing: LangSmith
+
+## Setup
+
+```bash
+python -m venv agents_venv && source agents_venv/bin/activate
+pip install -r requirements.txt
+```
+
+Build the index once (creates `faiss_index.bin` and `chunk_data.pkl`):
+
+```bash
+python src/ingest.py
+```
+
+Start the model server and leave it running (use your usual vllm-mlx command; it must serve
+`mlx-community/Qwen2.5-1.5B-Instruct-4bit` on port 8000). It handles **one generation at a time**.
+
+Everything below runs from the project root.
+
+## Run the app (three terminals)
+
+```bash
+# 1) model server  (your usual vllm-mlx command, port 8000)
+
+# 2) API
+uvicorn api:app --app-dir src --port 8001
+#    docs page: http://127.0.0.1:8001/docs      health: /health
+
+# 3) front end
+streamlit run src/app.py                          # http://localhost:8501
+```
+
+Optional switches when starting the API:
+
+```bash
+USE_CACHE=1 uvicorn api:app --app-dir src --port 8001                  # semantic cache on
+USE_CACHE=1 USE_LTM=1 uvicorn api:app --app-dir src --port 8001        # + long-term memory
+```
+
+API endpoints: `GET /health`, `POST /ask` (`{"question": "...", "thread_id": "optional"}`),
+`POST /approve` (`{"thread_id": "...", "decision": "approve" | "reject"}`).
+
+## Run each pattern from the command line
+
+```bash
+python src/rag_plain.py               # plain RAG baseline
+python src/supervisor_agent.py        # rule-based supervisor + human approval
+python src/supervisor_llm.py          # LLM-routed supervisor
+python src/swarm_agents.py            # swarm (agents hand off directly)
+python src/agentic_rag.py             # full agentic RAG graph (guards, abstain, memory, approval)
+python src/workflows.py "your question"   # evaluator-optimizer + routing
+```
+
+Ask a different question: `Q="What is 15 * 23 + 7?" python src/agentic_rag.py`
+
+## Benchmarks (latency and LLM calls)
+
+Index is loaded before timing; 1 warm-up run, then 3 timed runs, median reported.
+
+```bash
+BENCH=1 python src/rag_plain.py
+BENCH=1 python src/supervisor_agent.py
+BENCH=1 python src/supervisor_llm.py
+BENCH=1 python src/swarm_agents.py
+BENCH=1 python src/agentic_rag.py
+BENCH=1 python src/workflows.py
+```
+
+## Evaluations
+
+```bash
+python src/check_evals_set.py                      # sanity-check the question set against the index (no LLM)
+python src/run_agent_evals.py                      # all six modes, writes evals/agent_eval_results.csv
+ONLY=workflows python src/run_agent_evals.py       # one mode (or ONLY=agentic_rag,workflows)
+ONLY=workflows SHOW_SCORES=1 python src/run_agent_evals.py   # per-sentence grounding scores
+```
+
+Questions live in `evals/agent_eval_set.json`. `type: qa` is scored on expected keywords and source;
+`type: ooc` (out-of-corpus) is scored on whether the system abstains. Questions with empty `keywords` are skipped.
+The runner also runs the HITL test and the calculator and PII checks.
+
+Retrieval evals from earlier weeks: `python src/run_eval.py`, `python src/run_evals_hybrid.py`, `python src/run_ragas_evals.py`.
+
+## Semantic cache
+
+```bash
+python src/semantic_cache.py calibrate    # similarity of paraphrase vs similar-but-different pairs (no LLM needed)
+python src/semantic_cache.py demo         # ask / paraphrase / different / repeat; shows hit or miss
+```
+
+## Long-term memory
+
+```bash
+python src/agent_memory.py                # demo: add, dedupe (same memory twice -> "updated"), retrieve
+rm agent_memory_index.bin agent_memory_data.pkl     # forget everything
+USE_LTM=1 python src/agentic_rag.py       # turn it on for a run
+```
+
+## MCP server
+
+Two read-only tools for any MCP client: `search_corpus(query, k)` (raw chunks with source and distance, no model)
+and `answer_question(question)` (the full agentic graph; auto-approves since no human is attached; never writes memory).
+
+```bash
+pip install "mcp<2"
+npx @modelcontextprotocol/inspector python src/mcp_server.py      # try it in a browser
+claude mcp add nas-rag -- /full/path/to/agents_venv/bin/python /full/path/to/RAG_Project/src/mcp_server.py
+```
+
+Over stdio, stdout carries the protocol, so the server sends all prints to stderr.
+
+## LangSmith tracing
+
+Put these in a `.env` file in the project root (it is git-ignored; never commit it):
+
+```
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=...
+LANGCHAIN_PROJECT=RAG
+```
+
+(`LANGSMITH_TRACING`, `LANGSMITH_API_KEY` and `LANGSMITH_PROJECT` work too.) With these set, each graph node and each
+model call is traced; startup prints `[langsmith] tracing on`. Questions and retrieved text are sent to LangSmith, so
+do not trace private data.
+
+## Tuning the abstain gate
+
+```bash
+python src/agentic_rag.py calibrate       # best retrieval distance for each eval question (no LLM needed)
+SHOW_SCORES=1 python src/agentic_rag.py   # print distances during a run
+MAX_DIST=0.8 python src/agentic_rag.py    # distance above which the system abstains (default 0.8)
+```
+
+## Environment variables
+
+| Variable | Default | Effect |
+|---|---|---|
+| `VLLM_BASE_URL` | `http://127.0.0.1:8000/v1` | Model server address |
+| `BENCH` | off | `1` = benchmark mode (warm-up + 3 timed runs) |
+| `Q` | Navigator question | Question for `agentic_rag.py` |
+| `ONLY` | all | Comma-separated modes for `run_agent_evals.py` |
+| `EVAL_SET` | `evals/agent_eval_set.json` | Eval question file |
+| `EVAL_RUN` | off | `1` = never write to long-term memory (set automatically by the eval runner and MCP server) |
+| `SHOW_SCORES` | off | Print retrieval distances and grounding scores |
+| `SHOW_CHUNKS` | off | Print retrieved chunks (plain, supervisor, swarm) |
+| `GRADER` | `score` | Relevance grader: `score` (distance), `crag` (your CRAG grader), `own` (LLM, unreliable at 1.5B) |
+| `MAX_DIST` | `0.8` | Abstain when the best L2 distance is above this |
+| `USE_CACHE` | off | `1` = semantic cache |
+| `CACHE_THRESHOLD` | `0.95` | Cosine similarity needed for a cache hit |
+| `CACHE_TTL` | `3600` | Cache entry lifetime in seconds |
+| `USE_LTM` | off | `1` = long-term memory |
+| `MEMORY_DIR` | `.` | Where the memory files are stored |
+| `MEMORY_DUP_DISTANCE` | `0.15` | Distance under which a new memory updates an old one |
+| `MEMORY_RELEVANCE` | `0.5` | Distance under which a memory is shown to the model |
+| `GROUND_MIN` | `0.4` | Share of a sentence's words that must appear in the sources |
+| `MAX_REVISIONS` | `2` | Revision attempts in the evaluator-optimizer |
+| `CONTENT_GUARD` | off | `1` = LLM content check on the query |
+| `OUTPUT_PRESIDIO` | off | `1` = Presidio PII scan on the answer |
+| `ROUTER_GUARD` | on | `0` = let the LLM router's choice stand (shows misrouting) |
+| `LANGCHAIN_TRACING_V2` / `LANGSMITH_TRACING` | off | `true` = LangSmith tracing |
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| Front end shows "Cannot reach the API" | `uvicorn` is not running. Start it (step 2 above) and check `/health` |
+| `GET / 404` in the uvicorn log | Normal: there is no page at `/`. Open `/docs` |
+| `503 text_generation_busy` | The model server handles one request at a time; wait, or stop other runs. Benchmarks retry automatically |
+| `Connection refused` on port 8000 | The model server is not running |
+| "That conversation was lost" | The API restarted; pending approvals live in memory. Click **New conversation** |
+| Everything abstains with `GRADER=own` | The 1.5B model grades NO for everything. Use the default `GRADER=score` |
+| `FileNotFoundError: evals/agent_eval_set.json` | Run from the project root |
+| No `[langsmith] tracing on` line | The variables are not in `.env` in the project root, or `pip install langsmith python-dotenv` is missing |
+| `ImportError` for `mcp.server.fastmcp` | `pip install "mcp<2"` |
+
+## Layout
+
+| File | Purpose |
+|---|---|
+| `src/ingest.py`, `retrieve.py`, `hybrid_retriever.py`, `reranker.py` | Index and retrieval |
+| `src/corrective_rag.py` | CRAG grading and query reformulation |
+| `src/guardrails.py`, `guardrails_presi.py`, `nemo_config/` | PII and content guardrails |
+| `src/react_loop.py`, `agents_tools.py`, `langgraph_agent.py` | Tool loop and tools |
+| `src/rag_plain.py`, `supervisor_agent.py`, `supervisor_llm.py`, `swarm_agents.py` | Agent patterns compared |
+| `src/agentic_rag.py` | Merged agentic RAG graph |
+| `src/workflows.py` | Evaluator-optimizer and routing |
+| `src/semantic_cache.py`, `agent_memory.py` | Cache and long-term memory |
+| `src/api.py`, `src/app.py` | FastAPI service and Streamlit front end |
+| `src/mcp_server.py` | MCP server (two read-only tools) |
+| `src/bench_utils.py`, `prompts.py`, `run_agent_evals.py`, `check_evals_set.py` | Shared timing, prompt, eval runner and set checker |
