@@ -113,7 +113,7 @@ def new_conversation():
 # ---------------------------------------------------------------- sidebar
 with st.sidebar:
     st.header("Settings")
-    st.text_input("API URL", value="http://127.0.0.1:8001", key="api_url")
+    st.text_input("API URL", value=  "http://127.0.0.1:8001", key="api_url")
     if st.button("Check API"):
         try:
             h = requests.get(f"{ss.api_url}/health", timeout=5).json()

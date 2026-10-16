@@ -1,0 +1,8 @@
+agents_venv/
+.git/
+.env
+__pycache__/
+*.pyc
+evals/agent_eval_results.csv
+agent_memory_index.bin
+agent_memory_data.pkl

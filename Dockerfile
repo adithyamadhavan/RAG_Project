@@ -11,7 +11,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ ./src/
 COPY corpus/ ./corpus/
+COPY evals/ ./evals/
+COPY faiss_index.bin chunk_data.pkl ./
 
 ENV PYTHONUNBUFFERED=1
+EXPOSE 8001
 
-CMD ["python", "src/run_eval.py"]
+CMD ["uvicorn", "api:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8001"]

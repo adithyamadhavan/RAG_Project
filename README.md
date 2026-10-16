@@ -2427,3 +2427,48 @@ MAX_DIST=0.8 python src/agentic_rag.py    # distance above which the system abst
 | `src/api.py`, `src/app.py` | FastAPI service and Streamlit front end |
 | `src/mcp_server.py` | MCP server (two read-only tools) |
 | `src/bench_utils.py`, `prompts.py`, `run_agent_evals.py`, `check_evals_set.py` | Shared timing, prompt, eval runner and set checker |
+
+
+## Which code is which
+
+The project builds up in three stages. Each stage reuses the one before it.
+
+### 1. RAG (retrieve, then answer)
+No decisions are made by the model. The code always does the same steps.
+
+| File | Role |
+|---|---|
+| `src/ingest.py`, `retrieve.py`, `hybrid_retriever.py`, `reranker.py` | Build the index; dense, BM25 and reranked search |
+| `src/rag_plain.py` | **The RAG baseline:** retrieve top-k chunks, then one LLM call |
+| `src/prompts.py`, `bench_utils.py` | Shared prompt and timing/call counting |
+
+### 2. Agents (the model or a graph decides what to do)
+
+| File | Role |
+|---|---|
+| `src/react_loop.py`, `agents_tools.py`, `langgraph_agent.py` | Tool-calling loop and its tools |
+| `src/supervisor_agent.py` | Supervisor graph; routing by rules, with human approval |
+| `src/supervisor_llm.py` | Same graph, routing decided by an LLM call |
+| `src/swarm_agents.py` | Swarm: agents hand off to each other |
+| `src/workflows.py` | Fixed workflows (evaluator-optimizer, routing); not agents, since code decides the path |
+
+These are compared against `rag_plain.py` on the same questions in `src/run_agent_evals.py`.
+
+### 3. Agentic RAG (RAG and agent features combined)
+**`src/agentic_rag.py`** is one LangGraph that merges the earlier pieces:
+input guard (PII) → calculator tool or retrieve → grade the evidence →
+generate, reformulate once, or abstain → output guard → human approval.
+
+It adds, on top of plain RAG:
+- a distance gate and groundedness check (it abstains instead of guessing)
+- corrective retry (`src/corrective_rag.py`)
+- guardrails (`src/guardrails.py`, `guardrails_presi.py`, `nemo_config/`)
+- conversation memory, long-term memory (`agent_memory.py`) and semantic cache (`semantic_cache.py`)
+
+### Serving the agentic RAG graph
+| File | Role |
+|---|---|
+| `src/api.py` | FastAPI: `/health`, `/ask`, `/approve` |
+| `src/app.py` | Streamlit front end (calls the API) |
+| `src/mcp_server.py` | MCP server with two read-only tools |
+| `src/run_agent_evals.py`, `check_eval_set.py` | Evaluation runner and eval-set checker |
